@@ -11,6 +11,11 @@
     "board/esp32p4-builtin.cfg"
   ],
   "cSpell.words": [
+    "Deinitialized",
+    "hpoint",
+    "ledc",
+    "LOGD",
+    "LOGI",
     "menuconfig",
     "skidsteer"
   ]
