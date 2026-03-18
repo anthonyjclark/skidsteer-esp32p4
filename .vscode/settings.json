@@ -1,0 +1,17 @@
+{
+  "C_Cpp.intelliSenseEngine": "disabled",
+  "idf.currentSetup": "/Users/ajcd2020/.espressif/v5.5.3/esp-idf",
+  "clangd.path": "/Users/ajcd2020/.espressif/tools/esp-clang/esp-19.1.2_20250312/esp-clang/bin/clangd",
+  "clangd.arguments": [
+    "--background-index",
+    "--query-driver=**",
+    "--compile-commands-dir=/Users/ajcd2020/Documents/Repositories/anthonyjclark/skidsteer-esp32p4/build"
+  ],
+  "idf.openOcdConfigs": [
+    "board/esp32p4-builtin.cfg"
+  ],
+  "cSpell.words": [
+    "menuconfig",
+    "skidsteer"
+  ]
+}
