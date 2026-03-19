@@ -64,21 +64,21 @@ esp_err_t drv8835_init(const drv8835_config_t *config, drv8835_handle_t *handle)
   if (!device) return ESP_ERR_NO_MEM;
 
   device->a_speed = config->a_speed_pin;
-  device->a_dir = config->a_dir_pin;
+  device->a_dir   = config->a_dir_pin;
   device->b_speed = config->b_speed_pin;
-  device->b_dir = config->b_dir_pin;
-  device->timer = config->timer;
-  device->a_pwm = config->a_pwm_channel;
-  device->b_pwm = config->b_pwm_channel;
+  device->b_dir   = config->b_dir_pin;
+  device->timer   = config->timer;
+  device->a_pwm   = config->a_pwm_channel;
+  device->b_pwm   = config->b_pwm_channel;
 
   // Configure direction (phase) pins as GPIO output
-  uint64_t pin_mask = (1ULL << device->a_dir) | (1ULL << device->b_dir);
+  uint64_t pin_mask     = (1ULL << device->a_dir) | (1ULL << device->b_dir);
   gpio_config_t io_conf = {
       .pin_bit_mask = pin_mask,
-      .mode = GPIO_MODE_OUTPUT,
-      .pull_up_en = GPIO_PULLUP_DISABLE,
+      .mode         = GPIO_MODE_OUTPUT,
+      .pull_up_en   = GPIO_PULLUP_DISABLE,
       .pull_down_en = GPIO_PULLDOWN_DISABLE,
-      .intr_type = GPIO_INTR_DISABLE,
+      .intr_type    = GPIO_INTR_DISABLE,
   };
   esp_err_t ret = gpio_config(&io_conf);
   if (ret != ESP_OK) {
@@ -89,11 +89,11 @@ esp_err_t drv8835_init(const drv8835_config_t *config, drv8835_handle_t *handle)
   // Configure LEDC timer
   // TODO: will reinitialize if already configured (check first)
   ledc_timer_config_t timer_conf = {
-      .speed_mode = LEDC_LOW_SPEED_MODE,
+      .speed_mode      = LEDC_LOW_SPEED_MODE,
       .duty_resolution = DRV8835_PWM_RESOLUTION_BITS,
-      .timer_num = device->timer,
-      .freq_hz = DRV8835_PWM_FREQ_HZ,
-      .clk_cfg = LEDC_AUTO_CLK,
+      .timer_num       = device->timer,
+      .freq_hz         = DRV8835_PWM_FREQ_HZ,
+      .clk_cfg         = LEDC_AUTO_CLK,
   };
   ret = ledc_timer_config(&timer_conf);
   if (ret != ESP_OK) {
@@ -105,22 +105,22 @@ esp_err_t drv8835_init(const drv8835_config_t *config, drv8835_handle_t *handle)
   // NOTE: initial duty is 0 (stopped)
   ledc_channel_config_t ch_conf = {
       .speed_mode = LEDC_LOW_SPEED_MODE,
-      .timer_sel = device->timer,
-      .duty = 0,
-      .hpoint = 0,
+      .timer_sel  = device->timer,
+      .duty       = 0,
+      .hpoint     = 0,
   };
 
   ch_conf.gpio_num = device->a_speed;
-  ch_conf.channel = device->a_pwm;
-  ret = ledc_channel_config(&ch_conf);
+  ch_conf.channel  = device->a_pwm;
+  ret              = ledc_channel_config(&ch_conf);
   if (ret != ESP_OK) {
     free(device);
     return ret;
   }
 
   ch_conf.gpio_num = device->b_speed;
-  ch_conf.channel = device->b_pwm;
-  ret = ledc_channel_config(&ch_conf);
+  ch_conf.channel  = device->b_pwm;
+  ret              = ledc_channel_config(&ch_conf);
   if (ret != ESP_OK) {
     free(device);
     return ret;
@@ -139,7 +139,7 @@ esp_err_t drv8835_set_motor_dir(
     uint8_t speed) {
   if (!handle || motor > DRV8835_MOTOR_B) return ESP_ERR_INVALID_ARG;
 
-  gpio_num_t dir_pin = (motor == DRV8835_MOTOR_A) ? handle->a_dir : handle->b_dir;
+  gpio_num_t dir_pin    = (motor == DRV8835_MOTOR_A) ? handle->a_dir : handle->b_dir;
   ledc_channel_t pwm_ch = (motor == DRV8835_MOTOR_A) ? handle->a_pwm : handle->b_pwm;
 
   gpio_set_level(dir_pin, direction);
@@ -161,7 +161,7 @@ esp_err_t drv8835_set_motor(drv8835_handle_t handle, drv8835_motor_t motor, int8
   if (!handle) return ESP_ERR_INVALID_ARG;
 
   drv8835_direction_t dir = (speed >= 0) ? DRV8835_DIR_FORWARD : DRV8835_DIR_REVERSE;
-  uint8_t abs_speed = (speed >= 0) ? speed : -speed;
+  uint8_t abs_speed       = (speed >= 0) ? speed : -speed;
 
   return drv8835_set_motor_dir(handle, motor, dir, abs_speed);
 }
