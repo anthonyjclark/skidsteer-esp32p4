@@ -1,6 +1,8 @@
 build/
+managed_components/
 sdkconfig
 sdkconfig.old
+dependencies.lock
 
 # Created by https://www.toptal.com/developers/gitignore/api/c,VisualStudioCode
 # Edit at https://www.toptal.com/developers/gitignore?templates=c,VisualStudioCode

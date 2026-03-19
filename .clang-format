@@ -1,1 +1,3 @@
 ColumnLimit: 96
+AlignArrayOfStructures: Left
+AlignAfterOpenBracket: AlwaysBreak
