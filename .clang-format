@@ -2,3 +2,4 @@ ColumnLimit: 96
 AlignArrayOfStructures: Left
 AlignAfterOpenBracket: AlwaysBreak
 AllowShortIfStatementsOnASingleLine: true
+AlignConsecutiveAssignments: true
