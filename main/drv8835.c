@@ -35,8 +35,8 @@ typedef struct {
   ledc_timer_t timer;
   ledc_channel_t a_pwm_channel;
   ledc_channel_t b_pwm_channel;
-  bool a_inverted; // NEW: invert motor A direction
-  bool b_inverted; // NEW: invert motor B direction
+  bool a_inverted;
+  bool b_inverted;
 } drv8835_config_t;
 
 struct drv8835_t {
@@ -47,8 +47,8 @@ struct drv8835_t {
   ledc_timer_t timer;
   ledc_channel_t a_pwm;
   ledc_channel_t b_pwm;
-  bool a_inverted; // NEW
-  bool b_inverted; // NEW
+  bool a_inverted;
+  bool b_inverted;
 };
 
 typedef struct drv8835_t *drv8835_handle_t;
@@ -74,8 +74,8 @@ esp_err_t drv8835_init(const drv8835_config_t *config, drv8835_handle_t *handle)
   device->timer      = config->timer;
   device->a_pwm      = config->a_pwm_channel;
   device->b_pwm      = config->b_pwm_channel;
-  device->a_inverted = config->a_inverted; // NEW
-  device->b_inverted = config->b_inverted; // NEW
+  device->a_inverted = config->a_inverted;
+  device->b_inverted = config->b_inverted;
 
   uint64_t pin_mask     = (1ULL << device->a_dir) | (1ULL << device->b_dir);
   gpio_config_t io_conf = {
