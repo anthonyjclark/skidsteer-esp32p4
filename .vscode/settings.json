@@ -17,6 +17,7 @@
     "LOGD",
     "LOGI",
     "menuconfig",
+    "sdkconfig",
     "skidsteer"
   ]
 }
