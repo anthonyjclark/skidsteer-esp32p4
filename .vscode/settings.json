@@ -17,6 +17,7 @@
     "LOGD",
     "LOGI",
     "menuconfig",
+    "netif",
     "sdkconfig",
     "skidsteer"
   ]
