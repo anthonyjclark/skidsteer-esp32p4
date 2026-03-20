@@ -1,5 +1,14 @@
-ColumnLimit: 96
-AlignArrayOfStructures: Left
-AlignAfterOpenBracket: AlwaysBreak
+ColumnLimit: 120
 AllowShortIfStatementsOnASingleLine: true
+
+AlignAfterOpenBracket: AlwaysBreak
+AlignArrayOfStructures: Left
+AlignTrailingComments: true
+
 AlignConsecutiveAssignments: true
+AlignConsecutiveBitFields: true
+AlignConsecutiveDeclarations: true
+AlignConsecutiveMacros: true
+AlignConsecutiveTableGenBreakingDAGArgColons: true
+AlignConsecutiveTableGenCondOperatorColons: true
+AlignConsecutiveTableGenDefinitionColons: true
