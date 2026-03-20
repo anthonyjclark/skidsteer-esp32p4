@@ -12,7 +12,7 @@
         }
 
         body {
-            max-width: 500px;
+            max-width: 600px;
             margin: 0 auto;
             padding: 20px;
             background: #1a1a2e;
@@ -264,6 +264,19 @@
             background: #546e7a;
         }
 
+        .btn-toggle {
+            background: #0f3460;
+            color: white;
+        }
+
+        .btn-toggle:hover {
+            background: #1a5276;
+        }
+
+        .btn-toggle.active {
+            background: #e94560;
+        }
+
         /* Log */
         .log {
             background: #0a0a12;
@@ -325,6 +338,66 @@
         .connect-row button:hover {
             background: #ff6b6b;
         }
+
+        /* Charts */
+        .chart-container {
+            background: #0a0a12;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 15px;
+        }
+
+        .chart-container canvas {
+            width: 100% !important;
+            height: 200px !important;
+        }
+
+        .chart-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .chart-controls label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+        }
+
+        .chart-controls input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+
+        .encoder-values {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .encoder-value {
+            background: #16213e;
+            padding: 8px;
+            border-radius: 6px;
+        }
+
+        .encoder-value .label {
+            color: #aaa;
+            font-size: 11px;
+        }
+
+        .encoder-value .count {
+            color: #81c784;
+        }
+
+        .encoder-value .rpm {
+            color: #64b5f6;
+        }
     </style>
 </head>
 
@@ -356,6 +429,10 @@
                 <tr>
                     <td>Encoders</td>
                     <td>Read and reset encoder values</td>
+                </tr>
+                <tr>
+                    <td>Plots</td>
+                    <td>Real-time graphs of encoder counts and RPM</td>
                 </tr>
             </table>
 
@@ -486,8 +563,52 @@
     <div class="section">
         <h2>Encoders</h2>
         <div class="btn-row">
-            <button class="btn-send" onclick="sendCmd('encoders')">Read Encoders</button>
-            <button class="btn-reset" onclick="sendCmd('reset_encoders')">Reset Encoders</button>
+            <button class="btn-send" onclick="sendCmd('encoders')">Read Once</button>
+            <button class="btn-toggle" id="streamBtn" onclick="toggleStreaming()">Start Streaming</button>
+            <button class="btn-reset" onclick="sendCmd('reset_encoders')">Reset</button>
+        </div>
+
+        <div class="encoder-values" id="encoderValues">
+            <div class="encoder-value">
+                <div class="label">Front Left</div>
+                <div>Count: <span class="count" id="enc-fl-count">--</span></div>
+                <div>RPM: <span class="rpm" id="enc-fl-rpm">--</span></div>
+            </div>
+            <div class="encoder-value">
+                <div class="label">Front Right</div>
+                <div>Count: <span class="count" id="enc-fr-count">--</span></div>
+                <div>RPM: <span class="rpm" id="enc-fr-rpm">--</span></div>
+            </div>
+            <div class="encoder-value">
+                <div class="label">Rear Left</div>
+                <div>Count: <span class="count" id="enc-rl-count">--</span></div>
+                <div>RPM: <span class="rpm" id="enc-rl-rpm">--</span></div>
+            </div>
+            <div class="encoder-value">
+                <div class="label">Rear Right</div>
+                <div>Count: <span class="count" id="enc-rr-count">--</span></div>
+                <div>RPM: <span class="rpm" id="enc-rr-rpm">--</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Encoder Plots</h2>
+
+        <div class="chart-controls">
+            <label><input type="checkbox" id="show-fl" checked> FL</label>
+            <label><input type="checkbox" id="show-fr" checked> FR</label>
+            <label><input type="checkbox" id="show-rl" checked> RL</label>
+            <label><input type="checkbox" id="show-rr" checked> RR</label>
+            <button class="btn-reset" onclick="clearCharts()" style="padding: 5px 10px; font-size: 12px;">Clear</button>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="countChart"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="rpmChart"></canvas>
         </div>
     </div>
 
@@ -496,8 +617,193 @@
         <div id="log" class="log"></div>
     </div>
 
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script>
         let ws = null;
+        let streaming = false;
+        let streamInterval = null;
+
+        // Encoder data for plotting
+        const MAX_DATA_POINTS = 100;
+        const encoderData = {
+            labels: [],
+            counts: { fl: [], fr: [], rl: [], rr: [] },
+            rpms: { fl: [], fr: [], rl: [], rr: [] }
+        };
+
+        // Previous counts for RPM calculation
+        let prevCounts = { fl: 0, fr: 0, rl: 0, rr: 0 };
+        let prevTime = Date.now();
+        const ENCODER_PPR = 350;  // Adjust to match your encoder
+
+        // Chart colors
+        const colors = {
+            fl: '#e94560',
+            fr: '#64b5f6',
+            rl: '#81c784',
+            rr: '#ffb74d'
+        };
+
+        // Initialize charts
+        const countChart = new Chart(document.getElementById('countChart'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    { label: 'FL', data: [], borderColor: colors.fl, tension: 0.1, pointRadius: 0 },
+                    { label: 'FR', data: [], borderColor: colors.fr, tension: 0.1, pointRadius: 0 },
+                    { label: 'RL', data: [], borderColor: colors.rl, tension: 0.1, pointRadius: 0 },
+                    { label: 'RR', data: [], borderColor: colors.rr, tension: 0.1, pointRadius: 0 }
+                ]
+            },
+            options: {
+                responsive: true,
+                animation: false,
+                plugins: {
+                    title: { display: true, text: 'Encoder Counts', color: '#eee' },
+                    legend: { labels: { color: '#aaa' } }
+                },
+                scales: {
+                    x: { display: false },
+                    y: { ticks: { color: '#aaa' }, grid: { color: '#333' } }
+                }
+            }
+        });
+
+        const rpmChart = new Chart(document.getElementById('rpmChart'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    { label: 'FL', data: [], borderColor: colors.fl, tension: 0.1, pointRadius: 0 },
+                    { label: 'FR', data: [], borderColor: colors.fr, tension: 0.1, pointRadius: 0 },
+                    { label: 'RL', data: [], borderColor: colors.rl, tension: 0.1, pointRadius: 0 },
+                    { label: 'RR', data: [], borderColor: colors.rr, tension: 0.1, pointRadius: 0 }
+                ]
+            },
+            options: {
+                responsive: true,
+                animation: false,
+                plugins: {
+                    title: { display: true, text: 'RPM', color: '#eee' },
+                    legend: { labels: { color: '#aaa' } }
+                },
+                scales: {
+                    x: { display: false },
+                    y: { ticks: { color: '#aaa' }, grid: { color: '#333' } }
+                }
+            }
+        });
+
+        // Update chart visibility based on checkboxes
+        ['fl', 'fr', 'rl', 'rr'].forEach((motor, idx) => {
+            document.getElementById(`show-${motor}`).addEventListener('change', (e) => {
+                countChart.data.datasets[idx].hidden = !e.target.checked;
+                rpmChart.data.datasets[idx].hidden = !e.target.checked;
+                countChart.update();
+                rpmChart.update();
+            });
+        });
+
+        function clearCharts() {
+            encoderData.labels = [];
+            ['fl', 'fr', 'rl', 'rr'].forEach(motor => {
+                encoderData.counts[motor] = [];
+                encoderData.rpms[motor] = [];
+            });
+            updateCharts();
+        }
+
+        function updateCharts() {
+            countChart.data.labels = encoderData.labels;
+            rpmChart.data.labels = encoderData.labels;
+
+            ['fl', 'fr', 'rl', 'rr'].forEach((motor, idx) => {
+                countChart.data.datasets[idx].data = encoderData.counts[motor];
+                rpmChart.data.datasets[idx].data = encoderData.rpms[motor];
+            });
+
+            countChart.update('none');
+            rpmChart.update('none');
+        }
+
+        function parseEncoderData(msg) {
+            // Expected format: "ENC:123,-456,789,-101"
+            const match = msg.match(/ENC:([-\d]+),([-\d]+),([-\d]+),([-\d]+)/);
+            if (!match) return null;
+
+            return {
+                fl: parseInt(match[1]),
+                fr: parseInt(match[2]),
+                rl: parseInt(match[3]),
+                rr: parseInt(match[4])
+            };
+        }
+
+        function processEncoderData(counts) {
+            const now = Date.now();
+            const dt = (now - prevTime) / 1000;  // seconds
+            prevTime = now;
+
+            // Calculate RPM for each motor
+            const rpms = {};
+            ['fl', 'fr', 'rl', 'rr'].forEach(motor => {
+                const dCount = counts[motor] - prevCounts[motor];
+                const countsPerSec = dt > 0 ? dCount / dt : 0;
+                const rps = countsPerSec / (ENCODER_PPR * 4);  // 4x for quadrature
+                rpms[motor] = rps * 60;  // Convert to RPM
+                prevCounts[motor] = counts[motor];
+            });
+
+            // Update display
+            ['fl', 'fr', 'rl', 'rr'].forEach(motor => {
+                document.getElementById(`enc-${motor}-count`).textContent = counts[motor];
+                document.getElementById(`enc-${motor}-rpm`).textContent = rpms[motor].toFixed(1);
+            });
+
+            // Add to chart data
+            const timestamp = new Date().toLocaleTimeString();
+            encoderData.labels.push(timestamp);
+            ['fl', 'fr', 'rl', 'rr'].forEach(motor => {
+                encoderData.counts[motor].push(counts[motor]);
+                encoderData.rpms[motor].push(rpms[motor]);
+            });
+
+            // Limit data points
+            if (encoderData.labels.length > MAX_DATA_POINTS) {
+                encoderData.labels.shift();
+                ['fl', 'fr', 'rl', 'rr'].forEach(motor => {
+                    encoderData.counts[motor].shift();
+                    encoderData.rpms[motor].shift();
+                });
+            }
+
+            updateCharts();
+        }
+
+        function toggleStreaming() {
+            streaming = !streaming;
+            const btn = document.getElementById('streamBtn');
+
+            if (streaming) {
+                btn.textContent = 'Stop Streaming';
+                btn.classList.add('active');
+                streamInterval = setInterval(() => {
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send('encoders');
+                    }
+                }, 100);  // 10 Hz
+            } else {
+                btn.textContent = 'Start Streaming';
+                btn.classList.remove('active');
+                if (streamInterval) {
+                    clearInterval(streamInterval);
+                    streamInterval = null;
+                }
+            }
+        }
 
         // Modal functions
         function toggleModal() {
@@ -510,7 +816,6 @@
             }
         }
 
-        // Close modal with Escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 document.getElementById('modal').classList.remove('show');
@@ -531,6 +836,11 @@
             entry.textContent = `[${time}] ${msg}`;
             logEl.appendChild(entry);
             logEl.scrollTop = logEl.scrollHeight;
+
+            // Limit log entries
+            while (logEl.children.length > 100) {
+                logEl.removeChild(logEl.firstChild);
+            }
         }
 
         function toggleConnection() {
@@ -561,6 +871,9 @@
             ws.onclose = () => {
                 setStatus('disconnected', 'Disconnected');
                 log('Disconnected', 'info');
+                if (streaming) {
+                    toggleStreaming();  // Stop streaming on disconnect
+                }
             };
 
             ws.onerror = (e) => {
@@ -569,7 +882,16 @@
             };
 
             ws.onmessage = (e) => {
-                log('← ' + e.data, 'received');
+                // Don't log encoder data during streaming (too noisy)
+                if (!streaming || !e.data.startsWith('ENC:')) {
+                    log('← ' + e.data, 'received');
+                }
+
+                // Parse encoder data
+                const encData = parseEncoderData(e.data);
+                if (encData) {
+                    processEncoderData(encData);
+                }
             };
         }
 
@@ -579,7 +901,9 @@
                 return;
             }
             ws.send(cmd);
-            log('→ ' + cmd, 'sent');
+            if (cmd !== 'encoders' || !streaming) {
+                log('→ ' + cmd, 'sent');
+            }
         }
 
         function updateSlider(id) {
@@ -621,7 +945,7 @@
             }
         });
 
-        // Try to auto-fill URL based on current host
+        // Auto-fill URL based on current host
         if (location.hostname && location.hostname !== 'localhost') {
             document.getElementById('wsUrl').value = `ws://${location.hostname}/ws`;
         }
