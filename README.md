@@ -29,7 +29,6 @@ idf.py build flash monitor
 
 ## Adding Wifi
 
-
 1. Add component dependencies
 2. Select the co-processor (the default is correct --> `esp32c6`)
 3. Create `sdkconfig.defaults` (required for the chip-specific configuration, even if empty)
@@ -45,9 +44,32 @@ Notes
 - [Configuration Files Structure and Relationships](https://docs.espressif.com/projects/esp-idf/en/v5.5.3/esp32p4/api-guides/kconfig/configuration_structure.html#sdkconfig-defaults-and-sdkconfig-defaults-chip)
 - [esp-hosted-mcu/docs/esp32_p4_function_ev_board.md](https://github.com/espressif/esp-hosted-mcu/blob/main/docs/esp32_p4_function_ev_board.md#3-building-host-for-the-p4)
 
+## Adding Wifi 2
+
+Following [Getting Started with Wi-Fi on ESP-IDF · Developer Portal](https://developer.espressif.com/blog/getting-started-with-wifi-on-esp-idf/).
+
+1. Create a new project: `idf.py create-project simple_connect`
+1. Add the `protocol_examples_common` component as a dependency inside `idf_component.yml`:
+
+  ```yaml
+  dependencies:
+    protocol_examples_common:
+      path: ${IDF_PATH}/examples/common_components/protocol_examples_common
+  ```
+
+1. Set the target: `idf.py set-target esp32p4` (also set the co-processor)
+1. Edit the Wifi credentials: `idf.py menuconfig`
+    - Example Connection Configuration -> connect using WiFi interface (check)
+    - Example Connection Configuration -> connect using Ethernet interface (uncheck)
+    - Example Connection Configuration -> WiFi Password
+    - Example Connection Configuration -> WiFi SSID
+
+NOTE: I should extract the relevant code from `protocol_examples_common`.
 
 ## TODO
 
 Switch over to container development? [IDF commands (including dev container)](https://github.com/espressif/vscode-esp-idf-extension/blob/master/README.md#all-available-commands)
 
 Move helper code into components with `idf.py create-component -C components NAME`
+
+Use `idf.py create-project simple_connect` to create the project instead of copying over the sample project.
