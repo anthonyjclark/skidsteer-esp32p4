@@ -5,11 +5,11 @@
 #include "esp_err.h"
 #include "esp_log.h"
 
-static const char *TAG = "DRV8835";
+static const char *DRV8835_TAG = "DRV8835";
 
-#define DRV8835_PWM_FREQ_HZ 20000     // 20kHz for quiet operation
-#define DRV8835_PWM_RESOLUTION_BITS 8 // 8-bit resolution gives 256 levels of speed control
-#define DRV8835_MAX_DUTY ((1 << DRV8835_PWM_RESOLUTION_BITS) - 1)
+#define DRV8835_PWM_FREQ_HZ         20000 // 20kHz for quiet operation
+#define DRV8835_PWM_RESOLUTION_BITS 8     // 8-bit resolution gives 256 levels of speed control
+#define DRV8835_MAX_DUTY            ((1 << DRV8835_PWM_RESOLUTION_BITS) - 1)
 
 typedef enum { DRV8835_MOTOR_A = 0, DRV8835_MOTOR_B = 1 } drv8835_motor_t;
 typedef enum { DRV8835_DIR_FORWARD = 0, DRV8835_DIR_REVERSE = 1 } drv8835_direction_t;
@@ -28,27 +28,27 @@ typedef enum { DRV8835_DIR_FORWARD = 0, DRV8835_DIR_REVERSE = 1 } drv8835_direct
 //   phase --> direction
 
 typedef struct {
-  gpio_num_t a_speed_pin;
-  gpio_num_t a_dir_pin;
-  gpio_num_t b_speed_pin;
-  gpio_num_t b_dir_pin;
-  ledc_timer_t timer;
+  gpio_num_t     a_speed_pin;
+  gpio_num_t     a_dir_pin;
+  gpio_num_t     b_speed_pin;
+  gpio_num_t     b_dir_pin;
+  ledc_timer_t   timer;
   ledc_channel_t a_pwm_channel;
   ledc_channel_t b_pwm_channel;
-  bool a_inverted;
-  bool b_inverted;
+  bool           a_inverted;
+  bool           b_inverted;
 } drv8835_config_t;
 
 struct drv8835_t {
-  gpio_num_t a_speed;
-  gpio_num_t a_dir;
-  gpio_num_t b_speed;
-  gpio_num_t b_dir;
-  ledc_timer_t timer;
+  gpio_num_t     a_speed;
+  gpio_num_t     a_dir;
+  gpio_num_t     b_speed;
+  gpio_num_t     b_dir;
+  ledc_timer_t   timer;
   ledc_channel_t a_pwm;
   ledc_channel_t b_pwm;
-  bool a_inverted;
-  bool b_inverted;
+  bool           a_inverted;
+  bool           b_inverted;
 };
 
 typedef struct drv8835_t *drv8835_handle_t;
@@ -77,13 +77,13 @@ esp_err_t drv8835_init(const drv8835_config_t *config, drv8835_handle_t *handle)
   device->a_inverted = config->a_inverted;
   device->b_inverted = config->b_inverted;
 
-  uint64_t pin_mask     = (1ULL << device->a_dir) | (1ULL << device->b_dir);
-  gpio_config_t io_conf = {
-      .pin_bit_mask = pin_mask,
-      .mode         = GPIO_MODE_OUTPUT,
-      .pull_up_en   = GPIO_PULLUP_DISABLE,
-      .pull_down_en = GPIO_PULLDOWN_DISABLE,
-      .intr_type    = GPIO_INTR_DISABLE,
+  uint64_t      pin_mask = (1ULL << device->a_dir) | (1ULL << device->b_dir);
+  gpio_config_t io_conf  = {
+       .pin_bit_mask = pin_mask,
+       .mode         = GPIO_MODE_OUTPUT,
+       .pull_up_en   = GPIO_PULLUP_DISABLE,
+       .pull_down_en = GPIO_PULLDOWN_DISABLE,
+       .intr_type    = GPIO_INTR_DISABLE,
   };
   esp_err_t ret = gpio_config(&io_conf);
   if (ret != ESP_OK) {
@@ -132,21 +132,20 @@ esp_err_t drv8835_init(const drv8835_config_t *config, drv8835_handle_t *handle)
   }
 
   *handle = device;
-  ESP_LOGI(TAG, "Initialized (PH/EN mode)");
+  ESP_LOGI(DRV8835_TAG, "Initialized (PH/EN mode)");
   return ESP_OK;
 }
 
 /**
  * @brief Set motor speed and direction
  */
-esp_err_t drv8835_set_motor_dir(
-    drv8835_handle_t handle, drv8835_motor_t motor, drv8835_direction_t direction,
-    uint8_t speed) {
+esp_err_t
+drv8835_set_motor_dir(drv8835_handle_t handle, drv8835_motor_t motor, drv8835_direction_t direction, uint8_t speed) {
   if (!handle || motor > DRV8835_MOTOR_B) return ESP_ERR_INVALID_ARG;
 
-  gpio_num_t dir_pin    = (motor == DRV8835_MOTOR_A) ? handle->a_dir : handle->b_dir;
-  ledc_channel_t pwm_ch = (motor == DRV8835_MOTOR_A) ? handle->a_pwm : handle->b_pwm;
-  bool inverted         = (motor == DRV8835_MOTOR_A) ? handle->a_inverted : handle->b_inverted;
+  gpio_num_t     dir_pin  = (motor == DRV8835_MOTOR_A) ? handle->a_dir : handle->b_dir;
+  ledc_channel_t pwm_ch   = (motor == DRV8835_MOTOR_A) ? handle->a_pwm : handle->b_pwm;
+  bool           inverted = (motor == DRV8835_MOTOR_A) ? handle->a_inverted : handle->b_inverted;
 
   // Apply inversion
   drv8835_direction_t actual_dir = inverted ? !direction : direction;
@@ -156,8 +155,8 @@ esp_err_t drv8835_set_motor_dir(
   ledc_update_duty(LEDC_LOW_SPEED_MODE, pwm_ch);
 
   ESP_LOGD(
-      TAG, "Motor %c: dir=%d (inv=%d), speed=%d", (motor == DRV8835_MOTOR_A) ? 'A' : 'B',
-      actual_dir, inverted, speed);
+      DRV8835_TAG, "Motor %c: dir=%d (inv=%d), speed=%d", (motor == DRV8835_MOTOR_A) ? 'A' : 'B', actual_dir, inverted,
+      speed);
   return ESP_OK;
 }
 
@@ -170,8 +169,8 @@ esp_err_t drv8835_set_motor_dir(
 esp_err_t drv8835_set_motor(drv8835_handle_t handle, drv8835_motor_t motor, int8_t speed) {
   if (!handle) return ESP_ERR_INVALID_ARG;
 
-  drv8835_direction_t dir = (speed >= 0) ? DRV8835_DIR_FORWARD : DRV8835_DIR_REVERSE;
-  uint8_t abs_speed       = (speed >= 0) ? speed : -speed;
+  drv8835_direction_t dir       = (speed >= 0) ? DRV8835_DIR_FORWARD : DRV8835_DIR_REVERSE;
+  uint8_t             abs_speed = (speed >= 0) ? speed : -speed;
 
   return drv8835_set_motor_dir(handle, motor, dir, abs_speed);
 }
@@ -179,9 +178,7 @@ esp_err_t drv8835_set_motor(drv8835_handle_t handle, drv8835_motor_t motor, int8
 /**
  * @brief Stop a motor (coast)
  */
-esp_err_t drv8835_stop(drv8835_handle_t handle, drv8835_motor_t motor) {
-  return drv8835_set_motor(handle, motor, 0);
-}
+esp_err_t drv8835_stop(drv8835_handle_t handle, drv8835_motor_t motor) { return drv8835_set_motor(handle, motor, 0); }
 
 /**
  * @brief Stop all motors
@@ -203,6 +200,6 @@ esp_err_t drv8835_deinit(drv8835_handle_t handle) {
   ledc_stop(LEDC_LOW_SPEED_MODE, handle->b_pwm, 0);
 
   free(handle);
-  ESP_LOGI(TAG, "Deinitialized");
+  ESP_LOGI(DRV8835_TAG, "Deinitialized");
   return ESP_OK;
 }
