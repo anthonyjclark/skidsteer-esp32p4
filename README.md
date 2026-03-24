@@ -1,5 +1,7 @@
 # Skid Steer ESP32P4
 
+NOTE: currently testing encoders with `main.encoder.c`.
+
 ## Initial Setup
 
 ```bash
