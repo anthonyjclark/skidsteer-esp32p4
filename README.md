@@ -1,5 +1,7 @@
 # Skid Steer ESP32P4
 
+This README is currently my personal notes. It is not written for others to use yet.
+
 NOTE: currently testing encoders with `main.encoder.c`.
 
 ## Initial Setup
