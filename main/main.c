@@ -126,7 +126,7 @@ static esp_err_t echo_handler(httpd_req_t *req) {
 
   } else if (strcmp(cmd, "forward") == 0) {
 
-    set_all_motors(75, 75, 75, 75);
+    set_all_motors(-90, 90, -90, 90);
     strcpy(response, "Moving forward");
 
   } else if (strcmp(cmd, "backward") == 0) {

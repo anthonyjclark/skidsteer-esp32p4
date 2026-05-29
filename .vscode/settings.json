@@ -20,5 +20,9 @@
     "netif",
     "sdkconfig",
     "skidsteer"
-  ]
+  ],
+  "idf.customExtraVars": {
+    "IDF_TARGET": "esp32p4"
+  },
+  "idf.port": "/dev/tty.usbmodem5AB01728571"
 }

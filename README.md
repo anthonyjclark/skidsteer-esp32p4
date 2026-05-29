@@ -35,6 +35,7 @@ idf.py build flash monitor
 
 1. Add component dependencies
 2. Select the co-processor (the default is correct --> `esp32c6`)
+    - (Top) -> Component config -> Wi-Fi Remote -> choose slave target -> select `esp32c6`
 3. Create `sdkconfig.defaults` (required for the chip-specific configuration, even if empty)
 4. Create `sdkconfig.defaults.esp32p4` (with contents specified in the esp-hosted GitHub guide)
 
